@@ -1,0 +1,178 @@
+/*************************************************************
+  Blynk is a platform with iOS and Android apps to control
+  ESP32, Arduino, Raspberry Pi and the likes over the Internet.
+  You can easily build mobile and web interfaces for any
+  projects by simply dragging and dropping widgets.
+
+    Downloads, docs, tutorials: https://www.blynk.io
+    Sketch generator:           https://examples.blynk.cc
+    Blynk community:            https://community.blynk.cc
+    Follow us:                  https://www.fb.com/blynkapp
+                                https://twitter.com/blynk_app
+
+  Blynk library is licensed under MIT license
+  This example code is in public domain.
+
+ *************************************************************
+  This example runs directly on ESP32 chip.
+
+  NOTE: This requires ESP32 support package:
+    https://github.com/espressif/arduino-esp32
+
+  Please be sure to select the right ESP32 module
+  in the Tools -> Board menu!
+
+  Change WiFi ssid, pass, and Blynk auth token to run :)
+  Feel free to apply it to any other example. It's simple!
+ *************************************************************/
+#include <Arduino.h>
+#include "driver/ledc.h"
+/* Comment this out to disable prints and save space */
+#define BLYNK_PRINT Serial
+#define IN1 12
+#define IN2 14
+#define IN3 27
+#define IN4 26
+#define ENA 5
+#define ENB 18
+const int ENA_CHANNEL = 0;
+const int ENB_CHANNEL = 1;
+
+int X=0,Y=0;
+int button=0;
+/* Fill in information from Blynk Device Info here */
+//#define BLYNK_TEMPLATE_ID           "TMPxxxxxx"
+//#define BLYNK_TEMPLATE_NAME         "Device"
+//#define BLYNK_AUTH_TOKEN            "YourAuthToken"
+
+#define BLYNK_TEMPLATE_ID "TMPL3sbM9hcDT"
+#define BLYNK_TEMPLATE_NAME "Line follower and mobile controlled car"
+#define BLYNK_AUTH_TOKEN "ZT62_io5Jca0v3uIUv5sHTGqCHQP1u5t"
+
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
+const int freq = 30000;
+
+const int resolution = 8;
+int dutyCycle;
+// Your WiFi credentials.
+// Set password to "" for open networks.
+char ssid[] = "Paranar";
+char pass[] = "76810406";
+
+BLYNK_WRITE(V5){
+  button=param.asInt();
+}
+BLYNK_WRITE(V6){
+  X=param.asInt();
+}
+BLYNK_WRITE(V7){
+  Y=param.asInt();
+}
+BLYNK_WRITE(V8) {
+  dutyCycle = param.asInt(); 
+}
+
+void setup(){
+  // Debug console
+  Serial.begin(9600);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  pinMode(ENA,OUTPUT);
+  pinMode(ENB,OUTPUT);
+  
+  
+
+  ledcAttach(ENA, 50,resolution);
+  ledcAttach(ENB, 50,resolution);
+  
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+}
+
+void loop()
+{
+  Serial.println(button);
+  Blynk.run();
+  Serial.println(X);
+  Serial.println(Y);
+  if(button==1){
+    controlCar();
+  }
+  else{
+    stop();
+  }
+
+}
+
+void controlCar(){
+
+  
+  if(X<=40 && Y>0 && X>=-40 ){
+    moveforward();
+  }
+  else if(X<=40 && Y<0 && X>=-40){
+    movebackward();
+  }
+  else if(X>=50){
+    moveright();
+  }
+  else if(X<=-50){
+    moveleft();
+  }
+  else if(X==0 && Y<=20 && Y>=-20){
+    stop();
+  }
+}
+
+void moveforward(){
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+  ledcWrite(ENA, dutyCycle);
+  ledcWrite(ENB,dutyCycle);
+
+}
+
+void movebackward(){
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+  ledcWrite(ENA, dutyCycle);
+  ledcWrite(ENB,dutyCycle);
+
+}
+
+void moveright(){
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+  
+  ledcWrite(ENA, dutyCycle);
+  ledcWrite(ENB,dutyCycle);
+}
+
+void moveleft(){
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+  ledcWrite(ENA, dutyCycle);
+  ledcWrite(ENB,dutyCycle);
+}
+
+void stop(){
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+  ledcWrite(ENA,dutyCycle);
+  ledcWrite(ENB,dutyCycle);
+
+}
+
